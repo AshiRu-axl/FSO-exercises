@@ -8,6 +8,7 @@ import {
   deletePerson,
   updatePerson,
 } from "./services/persons";
+import SuccedMessage from "./components/SuccedMessage";
 
 const updateObject = (newObject, array) =>
   array.map((value) => (value.id === newObject.id ? newObject : value));
@@ -19,7 +20,7 @@ const App = () => {
   //State variables
 
   const [persons, setPersons] = useState([]);
-
+  const [message, setMessage] = useState({ type: null, text: null });
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -27,9 +28,11 @@ const App = () => {
   //Effects
 
   useEffect(() => {
-    getAll().then((personsList) => {
-      setPersons(personsList);
-    });
+    getAll()
+      .then((personsList) => {
+        setPersons(personsList);
+      })
+      .catch(() => console.error("Is the server running?"));
   }, []);
 
   //Event handlers
@@ -38,24 +41,44 @@ const App = () => {
   const handleNameChange = (event) => setNewName(event.target.value);
   const handleNumberChange = (event) => setNewNumber(event.target.value);
 
+  const showMessage = (type, text) => {
+    setMessage({ type: type, text: text });
+    setTimeout(() => {
+      setMessage({ type: null, text: null });
+    }, 5000);
+  };
+
   //Requests
 
   const handleDelete = (id, name) => {
     if (window.confirm(`Do you want to delete ${name} from the phone book?`)) {
-      deletePerson(id).then(() => {
-        setPersons(deleteObject(id, persons));
-      });
+      deletePerson(id)
+        .then(() => {
+          setPersons(deleteObject(id, persons));
+        })
+        .catch((error) =>
+          showMessage(
+            "error",
+            `Information of ${name} has already been removed from server`
+          )
+        );
     }
+    ("");
   };
 
   const updateExisting = () => {
     const personToUpdate = persons.find((person) => person.name === newName);
     const newPerson = { ...personToUpdate, number: newNumber };
-    updatePerson(newPerson.id, newPerson).then((returnedData) => {
-      setPersons(updateObject(returnedData, persons));
-      setNewName("");
-      setNewNumber("");
-    });
+    updatePerson(newPerson.id, newPerson)
+      .then((returnedData) => {
+        setPersons(updateObject(returnedData, persons));
+        setNewName("");
+        setNewNumber("");
+        showMessage("succed", `Updated ${returnedData.name}`);
+      })
+      .catch(() => {
+        console.error(`Failed to update ${newPerson.name}`);
+      });
   };
 
   const addPerson = (event) => {
@@ -73,9 +96,14 @@ const App = () => {
       number: newNumber,
     };
 
-    createPerson(newPerson).then((returnedData) =>
-      setPersons(persons.concat(returnedData))
-    );
+    createPerson(newPerson)
+      .then((returnedData) => {
+        setPersons(persons.concat(returnedData));
+        showMessage("succed", `Added ${returnedData.name}`);
+      })
+      .catch(() => {
+        console.error(`Failed to add new person ${newName}`);
+      });
 
     setNewName("");
     setNewNumber("");
@@ -93,6 +121,7 @@ const App = () => {
         inputValue={searchInput}
         onInputChange={handleSearch}
       />
+      <SuccedMessage type={message.type} text={message.text} />
       <h2>add a new</h2>
 
       <PersonForm
