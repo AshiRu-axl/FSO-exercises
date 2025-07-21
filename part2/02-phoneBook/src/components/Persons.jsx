@@ -1,9 +1,12 @@
-export const Persons = ({ persons }) => {
+export const Persons = ({ persons, onDelete }) => {
   return (
     <>
-      {persons.map(({ name, number }, index) => (
-        <div key={index}>
-          <span>{name}</span> <span>{number}</span>
+      {persons.map((person) => (
+        <div key={person.id}>
+          <span>{person.name}</span> <span>{person.number}</span>
+          <button onClick={() => onDelete(person.id, person.name)}>
+            delete
+          </button>
         </div>
       ))}
     </>
